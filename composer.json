@@ -1,0 +1,8 @@
+{
+    "name": "excel_table_manager",
+    "description": "PHP Database Manager with Excel Upload",
+    "require": {
+        "php": ">=7.4",
+        "phpoffice/phpspreadsheet": "^1.29"
+    }
+}

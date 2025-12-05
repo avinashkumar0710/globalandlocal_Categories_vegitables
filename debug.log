@@ -1,0 +1,25 @@
+Array
+(
+    [action] => delete_row
+    [table_name] => nspcl
+    [pk_column] => id
+    [pk_value] => 100
+)
+Array
+(
+    [24457] => 1990-08-28 02:00:00
+    [20012002] => 55177777
+    [id] => 100
+    [2483261227010000] => 3268-12-27 01:00:00
+    [Shri] => Shri.
+    [NeelKumarSharma] => Ajay Tiwari
+    [GMBUH] => Manager
+    [StationHead] => C&I PP2
+    [264254251226010000] => 25807429-09-02 02:00:00
+    [80011102010000] => 0000-00-00 00:00:00
+    [nksharma02nspclcoin] => AJAY.TIWARI@NSPCL.CO.IN
+    [O] => O+
+    [action] => update_row
+    [table_name] => nspcl
+    [primary_key] => id
+)
