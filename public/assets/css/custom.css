@@ -1,0 +1,12 @@
+/* Custom CSS for Grid Buttons */
+.sidebar .btn-sm {
+    font-size: 0.75rem;
+}
+
+.sidebar .btn-sm i {
+    margin-bottom: 2px;
+}
+
+.sidebar .btn-sm small {
+    font-size: 0.65rem;
+}

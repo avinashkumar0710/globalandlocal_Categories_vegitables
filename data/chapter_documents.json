@@ -1,0 +1,83 @@
+[
+    {
+        "id": 3,
+        "chapter_id": null,
+        "original_name": "Chapter 03 \u2013 Fish and Crustaceans.doc",
+        "title": "Chapter 03 \u2013 Fish and Crustaceans",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765533381_693be6c5dfb81.html",
+        "file_path": "api.php?action=download_rich_document&document_id=3",
+        "uploaded_at": "2025-12-12 10:56:21"
+    },
+    {
+        "id": 4,
+        "chapter_id": null,
+        "original_name": "Chapter 03 \u2013 Fish and Crustaceans.doc",
+        "title": "Chapter 03 \u2013 Fish and Crustaceans",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765533494_693be736706a1.html",
+        "file_path": "api.php?action=download_rich_document&document_id=4",
+        "uploaded_at": "2025-12-12 10:58:14"
+    },
+    {
+        "id": 5,
+        "chapter_id": null,
+        "original_name": "Chapter 02 \u2013 Meat and Edible Meat Offal.doc",
+        "title": "Chapter 02 \u2013 Meat and Edible Meat Offal",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765533557_693be775dc86a.html",
+        "file_path": "api.php?action=download_rich_document&document_id=5",
+        "uploaded_at": "2025-12-12 10:59:17"
+    },
+    {
+        "id": 6,
+        "chapter_id": 1,
+        "original_name": "Chapter 02 \u2013 Meat and Edible Meat.doc",
+        "title": "Chapter 02 \u2013 Meat and Edible Meat",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765533764_693be8442824e.html",
+        "file_path": "api.php?action=download_rich_document&document_id=6",
+        "uploaded_at": "2025-12-12 11:02:44",
+        "updated_at": "2025-12-20 10:14:42"
+    },
+    {
+        "id": 7,
+        "chapter_id": 2,
+        "original_name": "Chapter 03 \u2013 Fish and Crustaceans.doc",
+        "title": "Chapter 03 \u2013 Fish and Crustaceans",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765533875_693be8b3d677e.html",
+        "file_path": "api.php?action=download_rich_document&document_id=7",
+        "uploaded_at": "2025-12-12 11:04:35"
+    },
+    {
+        "id": 8,
+        "chapter_id": 3,
+        "original_name": "Chapter 04 \u2013 Dairy Produce; Birds' Eggs; Natural Honey; Edible Products of Animal Origin, n.e.s..doc",
+        "title": "Chapter 04 \u2013 Dairy Produce; Birds' Eggs; Natural Honey; Edible Products of Animal Origin, n.e.s.",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765534225_693bea1169e82.html",
+        "file_path": "api.php?action=download_rich_document&document_id=8",
+        "uploaded_at": "2025-12-12 11:10:25"
+    },
+    {
+        "id": 9,
+        "chapter_id": null,
+        "original_name": "Chapter 05 Export Opportunities for India (Quick Summary).doc",
+        "title": "Chapter 05 Export Opportunities for India (Quick Summary)",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765535442_693beed27a1d2.html",
+        "file_path": "api.php?action=download_rich_document&document_id=9",
+        "uploaded_at": "2025-12-12 11:30:42"
+    },
+    {
+        "id": 10,
+        "chapter_id": 4,
+        "original_name": "Chapter 05 \u2013 Animal Origin Products n.e.s. (Casings, Feathers, Bone Meal).doc",
+        "title": "Chapter 05 \u2013 Animal Origin Products n.e.s. (Casings, Feathers, Bone Meal)",
+        "is_rich_doc": true,
+        "content_file": "data\/documents\/doc_1765535753_693bf0090e894.html",
+        "file_path": "api.php?action=download_rich_document&document_id=10",
+        "uploaded_at": "2025-12-12 11:35:53"
+    }
+]

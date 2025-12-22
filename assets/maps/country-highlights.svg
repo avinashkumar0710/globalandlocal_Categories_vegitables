@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" preserveAspectRatio="xMidYMid meet">
+  <!-- This is an overlay SVG for highlighting countries -->
+  <!-- Country highlight definitions will be added dynamically -->
+  
+  <!-- Example highlight for USA -->
+  <!-- <rect x="200" y="200" width="50" height="50" fill="rgba(255,0,0,0.3)" stroke="#ff0000" stroke-width="2" /> -->
+  
+  <!-- Example highlight for China -->
+  <!-- <rect x="800" y="250" width="80" height="60" fill="rgba(255,0,0,0.3)" stroke="#ff0000" stroke-width="2" /> -->
+</svg>

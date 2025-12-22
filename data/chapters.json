@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "name": "Chapter 02 \u2013 Meat and Edible Meat",
+        "created_at": "2025-12-12 11:01:52"
+    },
+    {
+        "id": 2,
+        "name": "Chapter 03 \u2013 Fish and Crustaceans",
+        "created_at": "2025-12-12 11:02:02"
+    },
+    {
+        "id": 3,
+        "name": "Chapter 04 \u2013 Dairy Produce; Birds' Eggs; Natural Honey; Edible Products of Animal Origin, n.e.s.",
+        "created_at": "2025-12-12 11:02:11"
+    },
+    {
+        "id": 4,
+        "name": "Chapter 05 \u2013 Animal Origin Products n.e.s. (Casings, Feathers, Bone Meal)",
+        "created_at": "2025-12-12 11:35:28"
+    }
+]

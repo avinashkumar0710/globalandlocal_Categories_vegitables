@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EOIP – Export Opportunity Intelligence Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PapaParse for CSV parsing (prototype; later switch to MySQL API) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    /* Header */
+    header {
+      background: #111827;
+      color: #f9fafb;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    header span {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: calc(100vh - 72px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 16px 12px;
+      overflow-y: auto;
+    }
+    .sidebar h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      margin: 0 0 8px;
+    }
+    .nav-section {
+      margin-bottom: 16px;
+    }
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #e5e7eb;
+      font-size: 16px;
+      cursor: pointer;
+      display: block;
+    }
+    .nav-btn:hover {
+      background: #111827;
+    }
+    .nav-btn.active {
+      background: #4b5563;
+    }
+
+    /* Main area */
+    .main {
+      padding: 16px 20px;
+      overflow: auto;
+    }
+    .search-bar {
+      display: none; /* hidden on Home/About/Chapter pages */
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .search-bar input {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+      min-width: 130px;
+    }
+    .search-bar button {
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+    .search-bar button:hover {
+      background: #1d4ed8;
+    }
+
+    .section-title {
+      font-size: 18px;
+      margin: 0 0 4px;
+    }
+    .section-sub {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .status {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 13px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    thead {
+      background: #f3f4f6;
+      position: sticky;   /* sticky header for all sections */
+      top: 0;
+      z-index: 1;
+    }
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+    th {
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+    }
+    tr:nth-child(even) td {
+      background: #f9fafb;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    .badge-high { background: #fee2e2; color: #b91c1c; }
+    .badge-med  { background: #fef3c7; color: #92400e; }
+    .badge-low  { background: #dcfce7; color: #166534; }
+
+    .muted { color: #9ca3af; font-size: 11px; }
+    .small { font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+
+    /* HOME PAGE STYLES */
+    .home-hero {
+      background: #111827;
+      color: #f9fafb;
+      padding: 18px 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      margin-bottom: 16px;
+    }
+    .home-eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #9ca3ff;
+      margin-bottom: 6px;
+    }
+    .home-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .home-title span {
+      color: #f97316;
+    }
+    .home-mission {
+      margin-top: 10px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #f9fafb;
+    }
+    .home-mission-line-2 {
+      margin-top: 2px;
+    }
+    .home-sub {
+      font-size: 13px;
+      color: #e5e7eb;
+      max-width: 700px;
+      margin-bottom: 10px;
+    }
+    .home-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .home-btn {
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .home-btn-primary {
+      background: #f97316;
+      color: #fff;
+    }
+    .home-btn-primary:hover { background:#ea580c; }
+    .home-btn-ghost {
+      background: transparent;
+      color: #e5e7eb;
+      border: 1px solid rgba(249,250,251,0.45);
+    }
+    .home-btn-ghost:hover {
+      background: rgba(15,23,42,0.7);
+    }
+    .home-note {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    /* About panel (Style B – light highlight) */
+    .about-panel {
+      background: #e5f0ff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-size: 13px;
+    }
+    .about-panel h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+
+    /* Offers section */
+    .offers-section {
+      background: white;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-size: 13px;
+    }
+    .offers-section h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .offers-section p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .offer-item {
+      border-radius: 8px;
+      background: #f9fafb;
+      padding: 8px 10px;
+    }
+    .offer-item h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+    }
+    .offer-item ul {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 12px;
+    }
+    .offer-item li { margin-bottom: 2px; }
+
+    /* Modules section */
+    .modules-section {
+      margin-bottom: 14px;
+    }
+    .modules-section h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .modules-section p {
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .module-card {
+      background: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .module-card h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+    }
+    .module-card p {
+      margin: 0;
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .module-status {
+      display: inline-block;
+      margin-bottom: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .module-live {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .module-expanding {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .home-card {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      font-size: 13px;
+    }
+    .home-card h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+    .home-list {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 13px;
+    }
+    .home-list li { margin-bottom: 4px; }
+
+    .home-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .home-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background:#e5e7eb;
+      color:#111827;
+    }
+
+    @media (max-width: 900px) {
+      .home-hero { margin-bottom: 12px; }
+    }
+
+    /* Chapter Playbook blocks */
+    .chapter-block {
+      background: white;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-size: 13px;
+      max-width: 900px;
+    }
+    .chapter-block h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+    .chapter-subtitle {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    .chapter-block p {
+      margin: 0 0 6px;
+    }
+    .chapter-source {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <img src="./assets/images/logo.png"
+         alt="EOIP – Export Opportunity Intelligence Platform"
+         style="height:100px; width:auto; object-fit:contain;" />
+    <div>
+      <h1 style="margin:0;">ExportInsight / EOIP</h1>
+      <span>HS-based opportunity, risk &amp; production intelligence (Prototype v2)</span>
+    </div>
+  </div>
+  <div class="small">
+    Data source: Your curated datasets<br />
+    <span class="muted">Internal prototype – not for public release</span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- OVERVIEW section -->
+    <div class="nav-section">
+      <h2>Overview</h2>
+      <button class="nav-btn active" data-section="home">Home</button>
+      <button class="nav-btn" data-section="about">About Platform</button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Trade Data</h2>
+      <button class="nav-btn" data-section="hs-main">HS Main – Global Imports</button>
+      <button class="nav-btn" data-section="hs-country">Country-wise Imports</button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Production</h2>
+      <button class="nav-btn" data-section="prod-global">Production Factors – Global</button>
+      <button class="nav-btn" data-section="prod-india">Production Factors – India</button>
+      <button class="nav-btn" data-section="district-dashboard">District Export Intelligence Dashboard</button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Strategy</h2>
+      <button class="nav-btn" data-section="grow-smart">Grow Smart – Priority Products</button>
+      <button class="nav-btn" data-section="fta">FTA &amp; Trade Agreement Boosters</button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Risk &amp; Compliance</h2>
+      <button class="nav-btn" data-section="rejection">Rejection Must-Knows</button>
+      <button class="nav-btn" data-section="quality-global">Global Quality – Baseline Standards</button>
+    </div>
+
+    <div class="nav-section">
+      <h2>Support Network</h2>
+      <button class="nav-btn" data-section="contact-india">Indian Support Contacts</button>
+    </div>
+
+    <!-- NEW: Export Playbooks section -->
+    <div class="nav-section">
+      <h2>Export Playbooks</h2>
+      <button class="nav-btn" data-section="chapter-02">Ch 02 – Meat &amp; Offal</button>
+      <button class="nav-btn" data-section="chapter-03">Ch 03 – Fish &amp; Crustaceans</button>
+      <button class="nav-btn" data-section="chapter-04">Ch 04 – Dairy, Eggs &amp; Honey</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="search-bar" id="searchBar">
+      <label class="small">
+        HS Code (6-digit):
+        <input type="text" id="hsCodeInput" placeholder="e.g. 020110" maxlength="6" />
+      </label>
+      <label class="small">
+        HS Chapter (2-digit):
+        <input type="text" id="hsChapterInput" placeholder="e.g. 02" maxlength="2" />
+      </label>
+      <label class="small">
+        State:
+        <input type="text" id="stateInput" placeholder="e.g. Chhattisgarh" />
+      </label>
+      <label class="small">
+        District:
+        <input type="text" id="districtInput" placeholder="e.g. Bastar" />
+      </label>
+      <button id="searchBtn">Search</button>
+      <span class="muted">
+        For HS modules: use HS Code/Chapter. For District Dashboard: use State/District.
+        Leave empty to show top ~50 rows of the active section.
+      </span>
+    </div>
+
+    <h2 class="section-title" id="sectionTitle">Home – ExportInsight / EOIP</h2>
+    <div class="section-sub" id="sectionSub">
+      High-level overview of what this platform offers and how to start exploring HS-wise data.
+    </div>
+    <div class="status" id="statusText">
+      Welcome. Use the left navigation to open data modules, or start from HS Main – Global Imports.
+    </div>
+    <div id="tableContainer"></div>
+  </main>
+</div>
+
+<script>
+  // === HOME CONTENT ==========================================================
+  const HOME_HTML = `
+    <div class="home-hero">
+      <div class="home-eyebrow">Export Opportunity Intelligence Platform</div>
+
+      <div class="home-title">
+        Find your next <span>export opportunity</span> with data, not guesswork.
+      </div>
+
+      <div class="home-mission">
+        <div class="home-mission-line-1">
+          <strong>Empowering every Indian exporter — from districts to global markets.</strong>
+        </div>
+        <div class="home-mission-line-2">
+          <span style="color:#f97316;">
+            A national-service initiative to strengthen Brand India.
+          </span>
+        </div>
+      </div>
+
+      <div class="home-sub">
+        ExportInsight / EOIP brings together global import demand, rejection history,
+        quality standards, production factors and Indian support networks – organised
+        HS-wise and chapter-wise, so that exporters can take better decisions, faster.
+      </div>
+
+      <div class="home-cta-row">
+        <button class="home-btn home-btn-primary" onclick="switchToSection('hs-main')">
+          🔍 Start with HS Main – Global Imports
+        </button>
+        <button class="home-btn home-btn-ghost" onclick="switchToSection('about')">
+          About ExportInsight
+        </button>
+      </div>
+      <div class="home-note">
+        Tip: Use the left sidebar to move between Trade Data, Production, Strategy,
+        Risk &amp; Compliance and Support Network modules.
+      </div>
+    </div>
+
+    <!-- About ExportInsight – Final Version -->
+    <section class="about-panel">
+      <h3>About ExportInsight</h3>
+      <p style="margin:0 0 4px;">
+        ExportInsight is built on a simple mission:
+        <strong>to strengthen India’s global trade competitiveness.</strong>
+      </p>
+      <p style="margin:0 0 4px;">
+        ExportInsight is a not-for-profit, public-benefit platform designed to help
+        Indian exporters, MSMEs, FPOs and students access global trade intelligence easily.
+      </p>
+      <p style="margin:0 0 4px;">
+        By analyzing world import statistics through an Indian perspective, the platform helps exporters
+        identify the right markets, understand global standards, and avoid shipment rejections due to quality issues.
+      </p>
+      <p style="margin:0;">
+        ExportInsight is not just a data platform – it is a step towards resource optimization,
+        export readiness, and strengthening <strong>Brand India</strong> in the global marketplace.
+      </p>
+    </section>
+
+    <!-- What ExportInsight Offers – 6 pillars -->
+    <section class="offers-section">
+      <h3>⭐ What ExportInsight Offers</h3>
+      <p>
+        ExportInsight brings together all the essential components needed for India’s export success –
+        from global demand to district-level supply strength.
+      </p>
+      <div class="offers-grid">
+        <div class="offer-item">
+          <h4>1️⃣ HS Code–Wise Global Import Analysis</h4>
+          <ul>
+            <li>Understand worldwide import demand for your product.</li>
+            <li>Discover market growth, price shifts &amp; buyer preferences.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>2️⃣ Country-wise Import Intelligence</h4>
+          <ul>
+            <li>Top importing nations for each HS code.</li>
+            <li>Helps prioritize the most profitable export destinations.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>3️⃣ India’s Production &amp; Export Capability</h4>
+          <ul>
+            <li>State &amp; district-level production factors (soil, climate, logistics).</li>
+            <li>District Export Intelligence for product–market fit and volume readiness.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>4️⃣ Rejection Alerts, Risk &amp; Compliance</h4>
+          <ul>
+            <li>Market-wise rejection causes (2022–2025 trends).</li>
+            <li>Quality and compliance benchmarks to safeguard India’s global reputation.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>5️⃣ Strategic Export Acceleration</h4>
+          <ul>
+            <li>Priority product selection – “Grow Smart” guidance.</li>
+            <li>Trade agreements &amp; tariff advantages to boost market entry success.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>6️⃣ Indian Support Ecosystem</h4>
+          <ul>
+            <li>Government agencies &amp; export promotion bodies.</li>
+            <li>Cooperatives, clusters &amp; societies for sourcing &amp; certification support.</li>
+            <li>Connect local capabilities with global opportunities.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:10px; font-size:12px;">
+        <strong>💡 The Outcome:</strong>
+        ExportInsight empowers exporters with accurate, actionable trade intelligence –
+        helping India scale high-value exports, reduce risks, and capture new global markets.
+      </p>
+    </section>
+
+    <!-- Data Modules in Phase-1 -->
+    <section class="modules-section">
+      <h3>Data Modules in Phase-1</h3>
+      <p>
+        These intelligence modules are available based on data already curated.
+        New chapters and districts will be added over time.
+      </p>
+      <div class="modules-grid">
+        <div class="module-card">
+          <div class="module-status module-live">Live</div>
+          <h4>HS Main – Global Imports</h4>
+          <p>HS-code wise global imports with top importing countries, values and trends — helping you shortlist target markets and spot growth opportunities.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-live">Live</div>
+          <h4>Country-wise Imports</h4>
+          <p>Country-specific import dashboards showing which HS codes each market is buying most, and how demand is shifting over time.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-live">Live</div>
+          <h4>Production Factors – Global</h4>
+          <p>High-level view of global production and supply conditions for key products — to understand who else is supplying the world and where India can compete.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-live">Live</div>
+          <h4>Production Factors – India</h4>
+          <p>State and district-level resource mapping: soil, climate, crop suitability, logistics and storage — to judge whether India can reliably supply a product.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-expanding">Live / Expanding</div>
+          <h4>District Export Intelligence Dashboard</h4>
+          <p>District profiles combining production, export volumes, top buyer countries, GI tags and infrastructure — guiding district-driven export planning.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-expanding">Live / Expanding</div>
+          <h4>Grow Smart – Priority Products</h4>
+          <p>Data-backed list of priority products where India has strong potential — helping exporters and policymakers focus on high-impact opportunities.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-expanding">Live / Expanding</div>
+          <h4>FTA &amp; Trade Agreement Boosters</h4>
+          <p>Quick view of tariff advantages and concessions available for each HS code under India’s trade agreements — to choose markets with a pricing edge.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-live">Live</div>
+          <h4>Rejection Must-Knows</h4>
+          <p>Consolidated reasons for rejections and alerts across major markets — microbiological issues, residues, labelling, packaging and more — so exporters can avoid repeat mistakes.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-expanding">Live / Expanding</div>
+          <h4>Global Quality – Baseline Standards</h4>
+          <p>Key regulatory and buyer expectations by product category — covering safety limits, labelling rules, packaging norms and basic compliance checkpoints.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-status module-expanding">Live / Expanding</div>
+          <h4>Indian Support Contacts</h4>
+          <p>Directory of government agencies, export promotion councils, boards, cooperatives and societies that can help with sourcing, certification and export facilitation.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Designed For -->
+    <div class="home-card">
+      <h3>Designed for</h3>
+      <ul class="home-list">
+        <li>MSMEs starting or expanding exports.</li>
+        <li>FPOs, cooperatives and processors.</li>
+        <li>Export promotion / strategy professionals.</li>
+        <li>Students &amp; researchers of international trade.</li>
+      </ul>
+      <div class="home-badges">
+        <span class="home-pill">Data-driven</span>
+        <span class="home-pill">Risk-aware</span>
+        <span class="home-pill">Compliance-first</span>
+        <span class="home-pill">India-focused</span>
+      </div>
+    </div>
+  `;
+
+  // === ABOUT CONTENT ========================================================
+  const ABOUT_HTML = `
+    <div class="about-panel" style="max-width:900px; margin-bottom:12px;">
+      <h3>About ExportInsight</h3>
+      <p style="margin:0 0 4px;">
+        ExportInsight is built on a simple mission:
+        <strong>to strengthen India’s global trade competitiveness.</strong>
+      </p>
+      <p style="margin:0 0 4px;">
+        ExportInsight is a not-for-profit, public-benefit platform designed to help
+        Indian exporters, MSMEs, FPOs and students access global trade intelligence easily.
+      </p>
+      <p style="margin:0 0 4px;">
+        By analyzing world import statistics through an Indian perspective, the platform helps exporters
+        identify the right markets, understand global standards, and avoid shipment rejections due to quality issues.
+      </p>
+      <p style="margin:0;">
+        ExportInsight is not just a data platform — it is a step towards resource optimization, export readiness,
+        and strengthening <strong>Brand India</strong> in the global marketplace.
+      </p>
+    </div>
+
+    <div class="offers-section" style="max-width:900px; margin-bottom:12px;">
+      <h3>⭐ What ExportInsight Offers</h3>
+      <p>
+        ExportInsight brings together all the essential components needed for India’s export success —
+        from global demand to district-level supply strength.
+      </p>
+      <div class="offers-grid">
+        <div class="offer-item">
+          <h4>1️⃣ HS Code–Wise Global Import Analysis</h4>
+          <ul>
+            <li>Understand worldwide import demand for your product.</li>
+            <li>Discover market growth, price shifts &amp; buyer preferences.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>2️⃣ Country-wise Import Intelligence</h4>
+          <ul>
+            <li>Top importing nations for each HS code.</li>
+            <li>Helps prioritize the most profitable export destinations.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>3️⃣ India’s Production &amp; Export Capability</h4>
+          <ul>
+            <li>State &amp; district-level production factors (soil, climate, logistics).</li>
+            <li>District Export Intelligence for product–market fit and volume readiness.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>4️⃣ Rejection Alerts, Risk &amp; Compliance</h4>
+          <ul>
+            <li>Market-wise rejection causes (2022–2025 trends).</li>
+            <li>Quality and compliance benchmarks to safeguard India’s global reputation.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>5️⃣ Strategic Export Acceleration</h4>
+          <ul>
+            <li>Priority product selection – “Grow Smart” guidance.</li>
+            <li>Trade agreements &amp; tariff advantages to boost market entry success.</li>
+          </ul>
+        </div>
+        <div class="offer-item">
+          <h4>6️⃣ Indian Support Ecosystem</h4>
+          <ul>
+            <li>Government agencies &amp; export promotion bodies.</li>
+            <li>Cooperatives, clusters, societies for sourcing &amp; certification support.</li>
+            <li>Connect local capabilities with global opportunities.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:10px; font-size:12px;">
+        <strong>💡 The Outcome:</strong>
+        ExportInsight empowers exporters with accurate, actionable trade intelligence —
+        helping India scale high-value exports, reduce risks, and capture new global markets.
+      </p>
+    </div>
+
+    <div class="home-card" style="max-width:900px;">
+      <h3>Who is this platform for?</h3>
+      <ul class="home-list">
+        <li>MSMEs starting or expanding exports.</li>
+        <li>Farmer Producer Organisations (FPOs), cooperatives and processors.</li>
+        <li>Export promotion councils, strategy and policy professionals.</li>
+        <li>Students, researchers and institutions focused on international trade.</li>
+      </ul>
+      <div class="home-badges">
+        <span class="home-pill">HS-code centric</span>
+        <span class="home-pill">Data &amp; risk aware</span>
+        <span class="home-pill">Compliance-focused</span>
+        <span class="home-pill">India-first</span>
+      </div>
+    </div>
+  `;
+
+  // === NEW: Chapter Playbook HTML (02, 03, 04) ==============================
+  const CHAPTER_02_HTML = `
+    <section class="chapter-block">
+      <h2>Chapter 02 – Meat and Edible Meat Offal</h2>
+      <h3 class="chapter-subtitle">India’s Export Win Areas — 2025 Outlook</h3>
+
+      <p><strong>Global Market</strong><br>
+      Global imports of meat and edible offal are well above <strong>USD 150 billion</strong> annually.
+      Demand for buffalo meat, beef, poultry and niche meats is growing steadily across Asia, the Middle East
+      and parts of Africa.</p>
+
+      <p><strong>India’s Export Position &amp; Potential (2025)</strong><br>
+      India is a leading exporter of buffalo meat, supplying markets such as Vietnam, Malaysia, Egypt, the UAE
+      and Indonesia. Based on recent trends, India’s buffalo meat exports alone could reach
+      <strong>around USD 3.5–3.7 billion by 2025</strong>, with stable volumes and scope for better realisation
+      through value addition and branding.</p>
+
+      <p>
+        <strong>Rejection &amp; Compliance Watch</strong>
+        <span class="badge badge-high">High Risk</span><br>
+        International alerts have repeatedly highlighted:
+        residues of banned or restricted antibiotics and veterinary drugs,
+        microbiological contamination (e.g., Salmonella), and gaps in traceability and documentation.
+        Exporters must strictly follow MRLs, microbiological criteria and animal-origin documentation
+        requirements in each key market.
+      </p>
+
+      <p><strong>Production Edge &amp; Cluster Strength</strong><br>
+      India’s strength lies in its large buffalo population and established processing clusters in:
+      <em>Uttar Pradesh, Maharashtra, Andhra Pradesh, Telangana, Punjab and Rajasthan</em>.
+      With robust cold chain and certification, these states can support large, consistent export volumes.</p>
+
+      <p class="chapter-source">
+        <em>Data indicative, based on analysis of international trade statistics and regulatory alerts
+        up to recent years. Exporters should cross-check current figures and regulatory thresholds
+        before commercial decisions.</em>
+      </p>
+    </section>
+  `;
+
+  const CHAPTER_03_HTML = `
+    <section class="chapter-block">
+      <h2>Chapter 03 – Fish and Crustaceans</h2>
+      <h3 class="chapter-subtitle">India’s Export Win Areas — 2025 Outlook</h3>
+
+      <p><strong>Global Market</strong><br>
+      Global imports of fish, crustaceans and aquatic invertebrates are estimated above
+      <strong>USD 170 billion</strong> annually. Frozen shrimp, fish fillets and value-added seafood
+      dominate import baskets in the USA, EU, China, Japan and other major buyers.</p>
+
+      <p><strong>India’s Export Position &amp; Potential (2025)</strong><br>
+      India is among the world’s top shrimp exporters, with the USA, China, the EU, Japan and Southeast Asia
+      as major destinations. India’s marine product exports are already in the <strong>multi-billion USD</strong>
+      range, and with better farm management, disease control and value addition, total seafood exports
+      could reach <strong>around USD 8 billion or more by 2025</strong>.</p>
+
+      <p>
+        <strong>Rejection &amp; Compliance Watch</strong>
+        <span class="badge badge-high">High Risk</span><br>
+        Key concerns in recent years include residues of antibiotics (e.g., nitrofurans, chloramphenicol),
+        histamine in certain fish species, heavy metals, and hygiene lapses in processing.
+        Major markets also enforce strict controls on farm-level biosecurity and traceability.
+        Exporters must follow updated testing protocols and buyer specifications for each product and market.
+      </p>
+
+      <p><strong>Production Edge &amp; Cluster Strength</strong><br>
+      India has a strong natural base for aquaculture and marine capture:
+      <em>Andhra Pradesh</em> (major shrimp farms), <em>West Bengal and Odisha</em> (brackish water),
+      and coastal belts in <em>Gujarat, Kerala, Tamil Nadu and Maharashtra</em>.
+      With improved hatchery quality, feed management and cold chain, these clusters can reliably serve
+      high-value markets.</p>
+
+      <p class="chapter-source">
+        <em>Data indicative, based on export statistics and regulatory alerts up to recent years.
+        Users should reconfirm critical parameters (MRLs, microbiological limits, approved farms/units)
+        from the latest official notifications.</em>
+      </p>
+    </section>
+  `;
+
+  const CHAPTER_04_HTML = `
+    <section class="chapter-block">
+      <h2>Chapter 04 – Dairy Produce, Eggs and Natural Honey</h2>
+      <h3 class="chapter-subtitle">India’s Export Win Areas — 2025 Outlook</h3>
+
+      <p><strong>Global Market</strong><br>
+      The global market for milk powders, butter, cheese, table eggs and honey is a
+      multi-billion dollar segment. Demand is driven by growing populations, changing diets
+      and the food processing, bakery and confectionery industries across the Middle East,
+      Africa, Asia and developed markets.</p>
+
+      <p><strong>India’s Export Position &amp; Potential (2025)</strong><br>
+      India is the world’s largest milk producer and a major producer of eggs and honey,
+      but currently exports only a modest share of its output. Shipments of skimmed milk powder,
+      ghee/butter, table eggs and natural honey are growing toward the
+      <strong>hundreds of millions of USD</strong> range annually.
+      With better quality assurance and branding, the combined export potential for dairy,
+      eggs and honey could reach <strong>around USD 4 billion over the medium term</strong>, especially
+      in markets across the Middle East, North Africa and Asia.</p>
+
+      <p>
+        <strong>Rejection &amp; Compliance Watch</strong>
+        <span class="badge badge-high">High Risk</span><br>
+        Recent international concerns focus on:
+        Aflatoxin M1 in milk and milk powders, residues of veterinary drugs and antibiotics,
+        and adulteration or C4 sugar addition in honey detected through advanced NMR and isotope testing.
+        Importing countries also enforce strict conditions on animal health status and approved plants.
+        Exporters must align with the latest residue limits, plant approval lists and honey authenticity tests
+        in each market.
+      </p>
+
+      <p><strong>Production Edge &amp; Cluster Strength</strong><br>
+      India’s advantage comes from its huge and diversified livestock base and growing organised sector.
+      Key contributing states include:
+      <em>Uttar Pradesh, Punjab, Haryana, Gujarat, Maharashtra, Andhra Pradesh and Telangana</em>
+      for dairy; and major egg and honey belts in <em>Andhra Pradesh, Tamil Nadu, Karnataka and
+      states with strong beekeeping activity</em>.
+      With robust chilling, processing, traceability and residue monitoring, these clusters
+      can support sustainable exports.</p>
+
+      <p class="chapter-source">
+        <em>Data indicative, drawing on trade flows and regulatory developments for dairy, eggs and honey
+        up to recent years. Exporters should verify current standards and market-specific requirements
+        (e.g. Aflatoxin limits, residue norms, honey authenticity tests) before finalising shipments.</em>
+      </p>
+    </section>
+  `;
+
+  // === CONFIG: CSV-backed data sections =====================================
+  const DATASETS = {
+    "hs-main": {
+      title: "HS Main – Global Imports",
+      sub: "HS-wise global import value (USD million & ₹ crore).",
+      file: "data/HS_MAIN_FULL_ROWS.csv",
+      keyType: "hs6",
+      hsColumn: "HS_Code_6"
+    },
+    "hs-country": {
+      title: "Country-wise Imports",
+      sub: "Top importing countries by HS code.",
+      file: "data/HS_COUNTRY_FULL_UTF8_v1.csv",
+      keyType: "hs6",
+      hsColumn: "hs6"
+    },
+    "prod-global": {
+      title: "Production Factors – Global",
+      sub: "Agro-climatic suitability & global production context.",
+      file: "data/HS_PRODUCTION_FACTORS_FULL_v1.csv",
+      keyType: "hs6",
+      hsColumn: "HS_Code_6"
+    },
+    "prod-india": {
+      title: "Production Factors – India",
+      sub: "India-specific agronomy & feasibility factors.",
+      file: "data/HS_PRODUCTION_FACTORS_INDIA_FULL_v1.csv",
+      keyType: "hs6",
+      hsColumn: "HS_Code_6"
+    },
+    "district-dashboard": {
+      title: "District Export Intelligence Dashboard",
+      sub: "State- and district-wise agro-climatic profile, export products, infrastructure, incentives and GI strengths across India.",
+      file: "data/district_export_intelligence_v1.csv",
+      keyType: "district"
+    },
+    "grow-smart": {
+      title: "Grow Smart – Priority Products",
+      sub: "Ranked list of high-potential HS codes and best Indian clusters.",
+      file: "data/HS_GROW_SMART_FULL_v1.csv",
+      keyType: "hs6",
+      hsColumn: "HS Code (6-Digit)"
+    },
+    "fta": {
+      title: "FTA & Trade Agreement Boosters",
+      sub: "HS-wise products gaining the most from FTAs (values in USD million).",
+      file: "data/FTA_TRADE_BOOSTERS_FULL_v1.csv",
+      keyType: "hs6",
+      hsColumn: "HS_Code"
+    },
+    "rejection": {
+      title: "Rejection Must-Knows",
+      sub: "Chapter-wise rejection risk, killer reasons & must-do checklist.",
+      file: "data/REJECTION_MUST_KNOWS_FULL_v1.csv",
+      keyType: "chapter",
+      chapterColumn: "HS Chapter"
+    },
+    "quality-global": {
+      title: "Global Quality – Baseline Standards",
+      sub: "Heading-level global safety, MRLs, hygiene, packaging & labelling requirements.",
+      file: "data/HS_QUALITY_GLOBAL_FULL_v1.csv",
+      keyType: "chapter",
+      chapterColumn: "Chapter"
+    },
+    "contact-india": {
+      title: "Indian Support Contacts",
+      sub: "Government bodies, boards & associations mapped by HS chapter.",
+      file: "data/HS_CONTACT_INDIA_FULL_v1.csv",
+      keyType: "chapter",
+      chapterColumn: "hs2"
+    }
+  };
+
+  let currentSection = "home";
+
+  // === FTA enrichment (same as before) ======================================
+  function enrichFtaRow(row) {
+    let boostRaw =
+      row["Expected_Export_Boost_2025"] ??
+      row["Expected_Export_Boost_2025_INR_Cr"] ??
+      row["Expected_Export_Boost_2025_USD_M"];
+
+    let boost = 0;
+    if (boostRaw !== undefined && boostRaw !== null) {
+      const cleaned = String(boostRaw).replace(/[^0-9.]/g, "");
+      boost = parseFloat(cleaned) || 0;
+    }
+
+    const staging = (row["Duty_Reduction_Staging"] || "").toString().toLowerCase();
+    const agreement = (row["FTA_Agreement"] || "").toString().toLowerCase();
+
+    let riskLabel = "Instant 0% Duty";
+    if (!staging) {
+      riskLabel = "No Info / Check Tariff Schedule";
+    } else if (staging.includes("phased")) {
+      riskLabel = "Phased Duty Reduction";
+    }
+    if (agreement.includes("projected")) {
+      riskLabel = "Projected / Not Yet In Force";
+    }
+
+    let score = 50;
+    if (boost >= 400) score = 95;
+    else if (boost >= 200) score = 90;
+    else if (boost >= 100) score = 85;
+    else if (boost >= 50) score = 75;
+    else if (boost > 0) score = 65;
+
+    if (riskLabel.includes("phased")) score -= 5;
+    if (riskLabel.includes("Projected")) score -= 10;
+
+    score = Math.max(0, Math.min(100, score));
+
+    row["FTA Risk Level"] = riskLabel;
+    row["Opportunity Index (0-100)"] = score.toFixed(0);
+    return row;
+  }
+
+  // === Render table ==========================================================
+  function renderTable(data, containerId, sectionKey) {
+    const container = document.getElementById(containerId);
+    if (!data || data.length === 0) {
+      container.innerHTML = "<p class='muted'>No matching rows found for the current filter.</p>";
+      return;
+    }
+
+    let headers = Object.keys(data[0]);
+
+    if (sectionKey === "fta") {
+      if (!headers.includes("FTA Risk Level")) headers.push("FTA Risk Level");
+      if (!headers.includes("Opportunity Index (0-100)")) headers.push("Opportunity Index (0-100)");
+    }
+
+    if (sectionKey === "contact-india") {
+      headers = headers.filter(h => h !== "phone" && h !== "email");
+    }
+
+    let html = "<div style='max-height:70vh; overflow:auto; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08);'>";
+    html += "<table><thead><tr>";
+
+    headers.forEach(h => { html += "<th>" + h + "</th>"; });
+    html += "</tr></thead><tbody>";
+
+    data.forEach(row => {
+      html += "<tr>";
+      headers.forEach(h => {
+        let value = row[h];
+
+        if (sectionKey === "grow-smart" && h === "Rejection Risk Level") {
+          const v = (value || "").toString().toLowerCase();
+          let cls = "badge";
+          if (v.includes("very") || v.includes("high")) cls += " badge-high";
+          else if (v.includes("med")) cls += " badge-med";
+          else if (v.includes("low")) cls += " badge-low";
+          value = "<span class='" + cls + "'>" + (value || "") + "</span>";
+        }
+
+        if (sectionKey === "rejection" && h === "Rejection Severity Rank") {
+          const v = (value || "").toString().toLowerCase();
+          let cls = "badge";
+          if (v.includes("very") || v.includes("high")) cls += " badge-high";
+          else if (v.includes("med")) cls += " badge-med";
+          else if (v.includes("low")) cls += " badge-low";
+          value = "<span class='" + cls + "'>" + (value || "") + "</span>";
+        }
+
+        if (sectionKey === "quality-global" && h === "Risk Category") {
+          const v = (value || "").toString().toLowerCase();
+          let cls = "badge";
+          if (v.includes("very") || v.includes("high")) cls += " badge-high";
+          else if (v.includes("med")) cls += " badge-med";
+          else if (v.includes("low")) cls += " badge-low";
+          value = "<span class='" + cls + "'>" + (value || "") + "</span>";
+        }
+
+        if (sectionKey === "fta" && h === "FTA Risk Level") {
+          const v = (value || "").toString().toLowerCase();
+          let cls = "badge";
+          if (v.includes("instant")) cls += " badge-high";
+          else if (v.includes("phased")) cls += " badge-med";
+          else if (v.includes("projected") || v.includes("no info")) cls += " badge-low";
+          value = "<span class='" + cls + "'>" + (value || "") + "</span>";
+        }
+        if (sectionKey === "fta" && h === "Opportunity Index (0-100)") {
+          const num = parseFloat(value);
+          let cls = "badge";
+          if (!isNaN(num)) {
+            if (num >= 85) cls += " badge-high";
+            else if (num >= 70) cls += " badge-med";
+            else cls += " badge-low";
+          }
+          value = "<span class='" + cls + "'>" + (value || "") + "</span>";
+        }
+
+        html += "<td>" + (value == null ? "" : value) + "</td>";
+      });
+      html += "</tr>";
+    });
+
+    html += "</tbody></table></div>";
+    container.innerHTML = html;
+  }
+
+  // === Load CSV and filter by HS / chapter / district =======================
+  function loadSection(sectionKey) {
+    const cfg = DATASETS[sectionKey];
+    if (!cfg) return;
+
+    const statusEl = document.getElementById("statusText");
+    const titleEl = document.getElementById("sectionTitle");
+    const subEl = document.getElementById("sectionSub");
+    const searchBar = document.getElementById("searchBar");
+
+    titleEl.textContent = cfg.title;
+    subEl.textContent = cfg.sub;
+    if (searchBar) searchBar.style.display = "flex";
+
+    const hsCodeInput = (document.getElementById("hsCodeInput").value || "").trim();
+    const hsChapterInput = (document.getElementById("hsChapterInput").value || "").trim();
+    const stateInput = (document.getElementById("stateInput").value || "").trim();
+    const districtInput = (document.getElementById("districtInput").value || "").trim();
+
+    statusEl.textContent = "Loading data…";
+
+    Papa.parse(cfg.file, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        let rows = results.data;
+
+        if (cfg.keyType === "hs6" && cfg.hsColumn) {
+          rows = rows.map(r => {
+            if (r[cfg.hsColumn]) {
+              let code = r[cfg.hsColumn].toString().split(".")[0];
+              code = code.padStart(6, "0");
+              r[cfg.hsColumn] = code;
+              r["HS_Chapter"] = code.substring(0, 2);
+            }
+            return r;
+          });
+        } else if (cfg.keyType === "chapter" && cfg.chapterColumn) {
+          rows = rows.map(r => {
+            if (r[cfg.chapterColumn]) {
+              let ch = r[cfg.chapterColumn].toString().split(".")[0];
+              ch = ch.padStart(2, "0");
+              r[cfg.chapterColumn] = ch;
+            }
+            return r;
+          });
+        }
+
+        if (sectionKey === "fta") {
+          rows = rows.map(enrichFtaRow);
+        }
+
+        let filtered = rows;
+
+        if (cfg.keyType === "district") {
+          if (stateInput) {
+            const s = stateInput.toLowerCase();
+            filtered = filtered.filter(r => (r["State"] || "").toString().toLowerCase().includes(s));
+          }
+          if (districtInput) {
+            const d = districtInput.toLowerCase();
+            filtered = filtered.filter(r => (r["District"] || "").toString().toLowerCase().includes(d));
+          }
+          if (!stateInput && !districtInput) {
+            filtered = rows.slice(0, 50);
+          }
+        } else {
+          if (hsCodeInput && cfg.keyType === "hs6" && cfg.hsColumn) {
+            const target = hsCodeInput.padStart(6, "0");
+            filtered = rows.filter(r => (r[cfg.hsColumn] || "").toString() === target);
+          } else if (hsChapterInput) {
+            const ch = hsChapterInput.padStart(2, "0");
+            if (cfg.keyType === "hs6" && cfg.chapterColumn) {
+              filtered = rows.filter(r => (r[cfg.chapterColumn] || "").toString() === ch);
+            } else if (cfg.keyType === "hs6" && cfg.hsColumn) {
+              filtered = rows.filter(r => (r["HS_Chapter"] || "").toString() === ch);
+            } else if (cfg.keyType === "chapter" && cfg.chapterColumn) {
+              filtered = rows.filter(r => (r[cfg.chapterColumn] || "").toString() === ch);
+            }
+          } else {
+            filtered = rows.slice(0, 50);
+          }
+        }
+
+        renderTable(filtered, "tableContainer", sectionKey);
+        statusEl.textContent = "Showing " + filtered.length + " row(s).";
+      },
+      error: function(err) {
+        statusEl.textContent = "Error loading CSV: " + err.message;
+        document.getElementById("tableContainer").innerHTML = "";
+      }
+    });
+  }
+
+  // === Show Home section (no CSV) ===========================================
+  function showHomeSection() {
+    const titleEl = document.getElementById("sectionTitle");
+    const subEl = document.getElementById("sectionSub");
+    const statusEl = document.getElementById("statusText");
+    const container = document.getElementById("tableContainer");
+    const searchBar = document.getElementById("searchBar");
+
+    titleEl.textContent = "Home – ExportInsight / EOIP";
+    subEl.textContent = "High-level overview of what this platform offers and how to start exploring HS-wise data.";
+    statusEl.textContent = "Welcome. Use the left navigation to open data modules, or start from HS Main – Global Imports.";
+    container.innerHTML = HOME_HTML;
+    if (searchBar) searchBar.style.display = "none";
+  }
+
+  // === Show About section (no CSV) ==========================================
+  function showAboutSection() {
+    const titleEl = document.getElementById("sectionTitle");
+    const subEl = document.getElementById("sectionSub");
+    const statusEl = document.getElementById("statusText");
+    const container = document.getElementById("tableContainer");
+    const searchBar = document.getElementById("searchBar");
+
+    titleEl.textContent = "About EOIP – Export Opportunity Intelligence Platform";
+    subEl.textContent = "Narrative overview of ExportInsight, its purpose and who it is designed for.";
+    statusEl.textContent = "Narrative content – no CSV loaded for this section.";
+    container.innerHTML = ABOUT_HTML;
+    if (searchBar) searchBar.style.display = "none";
+  }
+
+  // === Show Chapter Playbook section (no CSV) ===============================
+  function showChapterSection(sectionKey) {
+    const titleEl = document.getElementById("sectionTitle");
+    const subEl = document.getElementById("sectionSub");
+    const statusEl = document.getElementById("statusText");
+    const container = document.getElementById("tableContainer");
+    const searchBar = document.getElementById("searchBar");
+
+    let html = "";
+    let title = "";
+    let sub = "Chapter-wise export opportunity, risk and production insight.";
+
+    if (sectionKey === "chapter-02") {
+      title = "Chapter 02 – Meat and Edible Meat Offal";
+      html = CHAPTER_02_HTML;
+    } else if (sectionKey === "chapter-03") {
+      title = "Chapter 03 – Fish and Crustaceans";
+      html = CHAPTER_03_HTML;
+    } else if (sectionKey === "chapter-04") {
+      title = "Chapter 04 – Dairy Produce, Eggs and Honey";
+      html = CHAPTER_04_HTML;
+    }
+
+    titleEl.textContent = title;
+    subEl.textContent = sub;
+    statusEl.textContent = "Narrative chapter playbook – no CSV loaded for this section.";
+    container.innerHTML = html;
+    if (searchBar) searchBar.style.display = "none";
+  }
+
+  // === Helper: switch section from Home buttons =============================
+  function switchToSection(sectionKey) {
+    document.querySelectorAll(".nav-btn").forEach(b => {
+      if (b.getAttribute("data-section") === sectionKey) {
+        b.classList.add("active");
+      } else if (b.getAttribute("data-section")) {
+        b.classList.remove("active");
+      }
+    });
+    currentSection = sectionKey;
+
+    if (currentSection === "home") {
+      showHomeSection();
+    } else if (currentSection === "about") {
+      showAboutSection();
+    } else if (currentSection === "chapter-02" ||
+               currentSection === "chapter-03" ||
+               currentSection === "chapter-04") {
+      showChapterSection(currentSection);
+    } else {
+      document.getElementById("tableContainer").innerHTML = "";
+      document.getElementById("statusText").textContent = "Ready. Click “Search” to load data.";
+      loadSection(currentSection);
+    }
+  }
+
+  // === Event wiring ==========================================================
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentSection = btn.getAttribute("data-section");
+
+      if (currentSection === "home") {
+        showHomeSection();
+      } else if (currentSection === "about") {
+        showAboutSection();
+      } else if (currentSection === "chapter-02" ||
+                 currentSection === "chapter-03" ||
+                 currentSection === "chapter-04") {
+        showChapterSection(currentSection);
+      } else {
+        document.getElementById("tableContainer").innerHTML = "";
+        document.getElementById("statusText").textContent = "Ready. Click “Search” to load data.";
+        loadSection(currentSection);
+      }
+    });
+  });
+
+  document.getElementById("searchBtn").addEventListener("click", () => {
+    if (currentSection === "about" ||
+        currentSection === "home"  ||
+        currentSection.startsWith("chapter-")) return;
+    loadSection(currentSection);
+  });
+
+  // Initial load – show Home
+  showHomeSection();
+</script>
+</body>
+</html>
