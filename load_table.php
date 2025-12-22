@@ -1,17 +1,6 @@
 <?php
 require "config/database.php";
 
-// In load_table.php, add:
-if (isset($_GET['format']) && $_GET['format'] === 'json') {
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'headers' => $headers, // array of column names
-        'data' => $data // array of associative arrays
-    ]);
-    exit;
-}
-
 if (!isset($_GET['table'])) {
     http_response_code(400);
     echo "<div class='alert alert-danger' style='margin:20px;'>No table selected</div>";
@@ -20,6 +9,8 @@ if (!isset($_GET['table'])) {
 
 $table = $_GET['table'];
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
 
 // Basic validation: only allow letters, numbers and underscore
 if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
@@ -70,10 +61,44 @@ if ($search !== '') {
     $sql .= " WHERE " . implode(" OR ", $where);
 }
 
-// Limit safety: if you expect big tables, you might add LIMIT/OFFSET here. For now returning all matched rows.
+// Add LIMIT and OFFSET for infinite scrolling
+$sql .= " LIMIT {$limit} OFFSET {$offset}";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle JSON format for infinite scrolling
+if (isset($_GET['format']) && $_GET['format'] === 'json') {
+    // Count total rows for pagination info
+    $countSql = "SELECT COUNT(*) FROM `$table`";
+    $countParams = [];
+    
+    if ($search !== '') {
+        // Build WHERE using LIKE for each column (use placeholders)
+        $where = [];
+        foreach ($columns as $col) {
+            $where[] = "`$col` LIKE ?";
+            $countParams[] = "%{$search}%";
+        }
+        $countSql .= " WHERE " . implode(" OR ", $where);
+    }
+    
+    $countStmt = $pdo->prepare($countSql);
+    $countStmt->execute($countParams);
+    $totalCount = $countStmt->fetchColumn();
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'headers' => $columns, // array of column names
+        'data' => $rows, // array of associative arrays
+        'offset' => $offset,
+        'limit' => $limit,
+        'total' => $totalCount,
+        'hasMore' => ($offset + $limit) < $totalCount
+    ]);
+    exit;
+}
 
 // Output: only table HTML (no search input) — index.php handles search input persistence
 if (!$rows) {
@@ -126,3 +151,4 @@ foreach ($rows as $r) {
 
 echo "</tbody></table>";
 echo "</div>";
+?>

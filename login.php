@@ -20,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validate credentials (plain text as requested)
     if ($user && $password === $user['password']) {
-
         // Store session
         $_SESSION['user_logged_in'] = true;
         $_SESSION['username'] = $username;

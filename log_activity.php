@@ -1,4 +1,5 @@
 <?php
+//log_activity.php - logs user activities
 function logActivity($pdo, $username, $action, $details = "") {
     $ip = $_SERVER['REMOTE_ADDR'];
 

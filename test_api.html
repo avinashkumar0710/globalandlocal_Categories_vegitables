@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Endpoint</title>
+</head>
+<body>
+    <h1>Testing Public API Endpoint</h1>
+    <button onclick="testApi()">Test Visitor Data API</button>
+    <div id="result" style="margin-top: 20px; white-space: pre-wrap; background: #f0f0f0; padding: 10px;"></div>
+
+    <script>
+        function testApi() {
+            fetch('public_api.php?action=get_visitor_data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('result').textContent = 'Error: ' + error.message;
+                });
+        }
+    </script>
+</body>
+</html>
